@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Simulasi Energi Interaktif</title>
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: linear-gradient(to bottom, #87ceeb, #ffffff);
+}
+canvas {
+    border: 2px solid #333;
+    background: #f9f9f9;
+}
+.panel {
+    margin-top: 10px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    display: inline-block;
+}
+button, input {
+    margin: 5px;
+    padding: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Simulasi Energi Benda Jatuh (Interaktif)</h2>
+
+<canvas id="canvas" width="300" height="500"></canvas>
+
+<div class="panel">
+    <p>Ketinggian: <span id="h"></span> m</p>
+    <p>Kecepatan: <span id="v"></span> m/s</p>
+    <p>Energi Potensial: <span id="ep"></span> J</p>
+    <p>Energi Kinetik: <span id="ek"></span> J</p>
+</div>
+
+<div class="panel">
+    Massa: <input type="range" id="massa" min="1" max="10" value="1"> 
+    <span id="mVal">1</span> kg<br>
+
+    Ketinggian: <input type="range" id="tinggi" min="5" max="20" value="10"> 
+    <span id="hVal">10</span> m
+</div>
+
+<div>
+    <button onclick="start()">Mulai</button>
+    <button onclick="togglePause()">Pause / Resume</button>
+    <button onclick="slowMo()">Slow Motion</button>
+    <button onclick="normalSpeed()">Normal</button>
+    <button onclick="reset()">Reset</button>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let y = 0, v = 0;
+let h0 = 10, m = 1;
+let g = 9.8;
+let dt = 0.05;
+let running = false;
+let paused = false;
+let scale = 20;
+
+const massaSlider = document.getElementById("massa");
+const tinggiSlider = document.getElementById("tinggi");
+
+// 🔥 UPDATE SLIDER REAL-TIME
+function updateControls() {
+    m = parseFloat(massaSlider.value);
+    h0 = parseFloat(tinggiSlider.value);
+
+    document.getElementById("mVal").innerText = m;
+    document.getElementById("hVal").innerText = h0;
+
+    // kalau belum jalan → posisi ikut slider
+    if (!running) {
+        y = 0;
+        draw();
+    }
+}
+
+massaSlider.oninput = updateControls;
+tinggiSlider.oninput = updateControls;
+
+updateControls();
+
+function start() {
+    y = 0;
+    v = 0;
+    running = true;
+    paused = false;
+    animate();
+}
+
+function togglePause() {
+    paused = !paused;
+}
+
+function reset() {
+    running = false;
+    paused = false;
+    y = 0;
+    v = 0;
+    draw();
+}
+
+function slowMo() {
+    dt = 0.01;
+}
+
+function normalSpeed() {
+    dt = 0.05;
+}
+
+function drawDashedLine() {
+    ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2, 0);
+    ctx.lineTo(canvas.width/2, canvas.height);
+    ctx.strokeStyle = "gray";
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function draw() {
+    let h = h0 - y;
+
+    let ep = m * g * h;
+    let ek = 0.5 * m * v * v;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawDashedLine();
+
+    let yCanvas = canvas.height - (h * scale) - 20;
+
+    // tanah
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+    // benda (SELALU TERLIHAT)
+    ctx.beginPath();
+    ctx.arc(canvas.width/2, yCanvas, 10, 0, Math.PI*2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+
+    // update teks
+    document.getElementById("h").innerText = h.toFixed(2);
+    document.getElementById("v").innerText = v.toFixed(2);
+    document.getElementById("ep").innerText = ep.toFixed(2);
+    document.getElementById("ek").innerText = ek.toFixed(2);
+}
+
+function animate() {
+    if (!running) return;
+
+    if (!paused) {
+        v += g * dt;
+        y += v * dt;
+    }
+
+    let h = h0 - y;
+
+    if (h <= 0) {
+        h = 0;
+        v = 0;
+        y = h0;
+    }
+
+    draw();
+
+    requestAnimationFrame(animate);
+}
+
+// 🔥 gambar awal langsung muncul
+draw();
+
+</script>
+
+</body>
+</html>
