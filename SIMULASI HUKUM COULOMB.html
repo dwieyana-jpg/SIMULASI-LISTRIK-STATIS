@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Hukum Coulomb</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 10px;
+    text-align: center;
+    background: #eef2f7;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+}
+
+.control {
+    background: white;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 10px;
+}
+
+input, select {
+    width: 100%;
+    margin-top: 5px;
+}
+
+canvas {
+    width: 100%;
+    height: 260px;
+    background: white;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.nilai {
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>SIMULASI HUKUM COULOMB</h2>
+<p>© 2026 oleh Dwi Yono, S.Pd Guru SMAN 1 Karanganyar</p>
+
+<div class="control">
+    Muatan 1: <span class="nilai" id="q1Val">5</span> μC
+    <input type="range" id="q1" min="1" max="10" value="5">
+</div>
+
+<div class="control">
+    Jenis Muatan 1
+    <select id="type1">
+        <option value="1">Positif (+)</option>
+        <option value="-1">Negatif (-)</option>
+    </select>
+</div>
+
+<div class="control">
+    Muatan 2: <span class="nilai" id="q2Val">5</span> μC
+    <input type="range" id="q2" min="1" max="10" value="5">
+</div>
+
+<div class="control">
+    Jenis Muatan 2
+    <select id="type2">
+        <option value="1">Positif (+)</option>
+        <option value="-1">Negatif (-)</option>
+    </select>
+</div>
+
+<div class="control">
+    Jarak awal: <span class="nilai" id="distVal">150</span> px
+    <input type="range" id="distance" min="80" max="300" value="150">
+</div>
+
+<div class="control">
+    Gaya Coulomb: <span class="nilai" id="forceVal">0</span> N
+</div>
+
+<canvas id="canvas"></canvas>
+
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = 260;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+// elemen
+const q1Slider = document.getElementById("q1");
+const q2Slider = document.getElementById("q2");
+const distSlider = document.getElementById("distance");
+
+const q1Val = document.getElementById("q1Val");
+const q2Val = document.getElementById("q2Val");
+const distVal = document.getElementById("distVal");
+const forceVal = document.getElementById("forceVal");
+
+const type1 = document.getElementById("type1");
+const type2 = document.getElementById("type2");
+
+// posisi
+let x1, x2;
+let v1 = 0;
+let v2 = 0;
+
+function drawArrow(x, y, length, direction) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + direction * length, y);
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x + direction * length, y);
+    ctx.lineTo(x + direction * length - 12 * direction, y - 7);
+    ctx.lineTo(x + direction * length - 12 * direction, y + 7);
+    ctx.closePath();
+    ctx.fillStyle = "red";
+    ctx.fill();
+}
+
+function animate() {
+    resizeCanvas();
+
+    const q1 = q1Slider.value * type1.value * 1e-6;
+    const q2 = q2Slider.value * type2.value * 1e-6;
+    const r0 = distSlider.value;
+
+    q1Val.textContent = q1Slider.value;
+    q2Val.textContent = q2Slider.value;
+    distVal.textContent = r0;
+
+    if (!x1 || !x2) {
+        x1 = canvas.width/2 - r0/2;
+        x2 = canvas.width/2 + r0/2;
+    }
+
+    let r = Math.abs(x2 - x1);
+
+    let k = 9e9;
+    let F = k * Math.abs(q1 * q2) / (r * r);
+
+    forceVal.textContent = F.toExponential(2);
+
+    let direction = (q1 * q2 > 0) ? -1 : 1;
+
+    let a = F * 5e-6; // diperbesar efek animasi
+    v1 += direction * a;
+    v2 -= direction * a;
+
+    v1 *= 0.98;
+    v2 *= 0.98;
+
+    x1 += v1;
+    x2 += v2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let y = canvas.height/2;
+
+    // garis putus-putus
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // muatan
+    ctx.beginPath();
+    ctx.arc(x1, y, 12, 0, Math.PI*2);
+    ctx.fillStyle = q1 > 0 ? "#007bff" : "#28a745";
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x2, y, 12, 0, Math.PI*2);
+    ctx.fillStyle = q2 > 0 ? "#007bff" : "#28a745";
+    ctx.fill();
+
+    // SKALA PANAH DIPERBESAR 🔥
+    let arrowLength = Math.min(F * 5e-7, 120);
+
+    if (q1 * q2 > 0) {
+        drawArrow(x1, y, arrowLength, -1);
+        drawArrow(x2, y, arrowLength, 1);
+    } else {
+        drawArrow(x1, y, arrowLength, 1);
+        drawArrow(x2, y, arrowLength, -1);
+    }
+
+    requestAnimationFrame(animate);
+}
+
+distSlider.oninput = () => {
+    x1 = null;
+    x2 = null;
+};
+
+animate();
+</script>
+
+</body>
+</html>
